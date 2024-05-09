@@ -19,46 +19,26 @@ def parse_input(part: int) -> tuple[list[str], list[tuple[int, ...]]]:
     return records, sizes
 
 
-def check_pattern(pattern: str) -> bool:
-    if not pattern:
-        return False
-    if '.' not in pattern[1:-1] and pattern[0] in ['?', '.', '*'] and pattern[-1] in ['?', '.', '*']:
-        return True
-    return False
-
-
-def traverse(record: str, length: int) -> tuple[int, str]:
-    if len(record) == length:
-        return 0, '*' + record + '*'
-    yield 0, '*' + record[:length+1]
-    for index in range(len(record) - length - 1):
-        yield index, record[index:index+length+2]
-    yield len(record) - length - 1, record[len(record) - length - 1:len(record) + 1] + '*'
+def check_record(record: str, size: int) -> bool:
+    return len(record) >= size and '.' not in record[:size] and (len(record) == size or record[size] != '#')
 
 
 @cache
-def process_record(record: str, sizes: tuple):
-    if len(record) < sum(sizes):
-        return 0
+def process_record(record: str, sizes: tuple[int]) -> int:
+    if not record:
+        return len(sizes) == 0
 
     if not sizes:
-        if '#' not in record:
-            return 1
-        return 0
-
-    if len(sizes) == 1 and len(record) == sizes[0] and '.' not in record:
-        return 1
+        return '#' not in record
 
     count = 0
-    size = sizes[0]
-    for index, substring in traverse(record, size):
-        if check_pattern(substring):
-            new_record = record[index+len(substring.replace('*', '')):]
-            new_sizes = sizes[1:]
-            new_count = process_record(new_record, new_sizes)
-            count += new_count
-        if substring[0] == '#':
-            break
+
+    if record[0] in '.?':
+        count += process_record(record[1:], sizes)
+
+    if record[0] in '#?' and check_record(record, sizes[0]):
+        count += process_record(record[sizes[0] + 1:], sizes[1:])
+
     return count
 
 
